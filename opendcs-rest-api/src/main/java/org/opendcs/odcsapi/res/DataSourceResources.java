@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.regex.Pattern;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
@@ -50,6 +51,8 @@ import org.opendcs.odcsapi.sec.AuthorizationCheck;
 public class DataSourceResources extends OpenDcsResource
 {
 	private DatabaseIO dbIo;
+	private static final Pattern COMMA = Pattern.compile(",");
+	private static final Pattern EQUAL = Pattern.compile("=");
 
 	@Context HttpHeaders httpHeaders;
 
@@ -332,10 +335,10 @@ public class DataSourceResources extends OpenDcsResource
 			return new Properties();
 		}
 		Properties props = new Properties();
-		String[] pairs = properties.split(",");
+		String[] pairs = properties.split(COMMA.pattern());
 		for (String pair : pairs)
 		{
-			String[] keyValue = pair.split("=");
+			String[] keyValue = pair.split(EQUAL.pattern());
 			props.setProperty(keyValue[0], keyValue[1]);
 		}
 		return props;

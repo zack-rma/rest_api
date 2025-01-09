@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.opendcs.odcsapi.res.DataSourceResources.map;
 import static org.opendcs.odcsapi.res.DataSourceResources.parseProps;
+import static org.opendcs.odcsapi.res.DataSourceResources.propsToString;
 
 final class DataSourceResourcesTest
 {
@@ -164,13 +165,13 @@ final class DataSourceResourcesTest
 		ApiDataSource apiData = new ApiDataSource();
 		apiData.setProps(props);
 
-		String result = DataSourceResources.propsToString(apiData.getProps());
+		String result = propsToString(apiData.getProps());
 
 		assertNotNull(result);
 		assertEquals("key=value,key2=value2", result);
 
 		props = new Properties();
-		result = DataSourceResources.propsToString(props);
+		result = propsToString(props);
 		assertEquals("", result);
 	}
 
