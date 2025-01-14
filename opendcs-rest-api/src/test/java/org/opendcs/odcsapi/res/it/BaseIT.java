@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Base64;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.filter.log.LogDetail;
@@ -127,19 +128,23 @@ class BaseIT
 
 	void logout(SessionFilter sessionFilter)
 	{
-		given()
+		if (DatabaseSetupExtension.getCurrentDbType() == DbType.OPEN_TSDB)
+		{
+			given()
 				.log().ifValidationFails(LogDetail.ALL, true)
-				.filter(sessionFilter)
+				.accept(MediaType.APPLICATION_JSON)
 				.header("Authorization", authHeader)
-				.when()
+				.filter(sessionFilter)
+			.when()
 				.redirects().follow(true)
 				.redirects().max(3)
 				.delete("logout")
-				.then()
+			.then()
 				.log().ifValidationFails(LogDetail.ALL, true)
-				.assertThat()
+			.assertThat()
 				.statusCode(is(HttpServletResponse.SC_NO_CONTENT))
-		;
+			;
+		}
 	}
 
 	public static void setUpCreds()
