@@ -16,8 +16,9 @@
 package org.opendcs.odcsapi.res;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.List;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
@@ -39,6 +40,7 @@ import decodes.sql.DbKey;
 import decodes.tsdb.BadTimeSeriesException;
 import decodes.tsdb.CTimeSeries;
 import decodes.tsdb.DbIoException;
+import decodes.tsdb.IntervalCodes;
 import decodes.tsdb.NoSuchObjectException;
 import decodes.tsdb.TimeSeriesDb;
 import decodes.tsdb.TimeSeriesIdentifier;
@@ -55,10 +57,10 @@ import org.opendcs.odcsapi.beans.ApiTimeSeriesSpec;
 import org.opendcs.odcsapi.beans.ApiTimeSeriesValue;
 import org.opendcs.odcsapi.beans.ApiTsGroup;
 import org.opendcs.odcsapi.beans.ApiTsGroupRef;
-import org.opendcs.odcsapi.dao.ApiRefListDAO;
 import org.opendcs.odcsapi.dao.DbException;
+import org.opendcs.odcsapi.errorhandling.DatabaseItemNotFoundException;
+import org.opendcs.odcsapi.errorhandling.MissingParameterException;
 import org.opendcs.odcsapi.errorhandling.WebAppException;
-import org.opendcs.odcsapi.hydrojson.DbInterface;
 import org.opendcs.odcsapi.sec.AuthorizationCheck;
 
 import ilex.util.IDateFormat;
@@ -79,11 +81,16 @@ public class TimeSeriesResources extends OpenDcsResource
 	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
 	public Response getTimeSeriesRefs(@QueryParam("active") Boolean activeOnly) throws DbException
 	{
+		if (activeOnly == null)
+		{
+			activeOnly = false;
+		}
+
 		TimeSeriesDb tsdb = getLegacyTimeseriesDB();
 		try (TimeSeriesDAI dai = tsdb.makeTimeSeriesDAO())
 		{
 			return Response.status(HttpServletResponse.SC_OK)
-					.entity(map(dai.listTimeSeries(), activeOnly != null && activeOnly))
+					.entity(idMap(dai.listTimeSeries( activeOnly)))
 					.build();
 		}
 		catch (DbIoException ex)
@@ -92,14 +99,12 @@ public class TimeSeriesResources extends OpenDcsResource
 		}
 	}
 
-	// TODO: Add active support to OpenDCS DAIs.
-	//  This method only supports active checking for the CWMS DB implementation.
-	static ArrayList<ApiTimeSeriesIdentifier> map(ArrayList<TimeSeriesIdentifier> identifiers, boolean activeOnly)
+	static ArrayList<ApiTimeSeriesIdentifier> idMap(ArrayList<TimeSeriesIdentifier> identifiers)
 	{
 		ArrayList<ApiTimeSeriesIdentifier> ret = new ArrayList<>();
 		for(TimeSeriesIdentifier id : identifiers)
 		{
-			if (activeOnly && id instanceof CwmsTsId)
+			if (id instanceof CwmsTsId)
 			{
 				CwmsTsId ctsid = (CwmsTsId)id;
 				if (ctsid.isActive())
@@ -146,8 +151,7 @@ public class TimeSeriesResources extends OpenDcsResource
 	{
 		if (tsKey == null)
 		{
-			throw new WebAppException(HttpServletResponse.SC_BAD_REQUEST,
-					"Missing required tskey parameter.");
+			throw new MissingParameterException("Missing required tskey parameter.");
 		}
 
 		try (TimeSeriesDAI dai = getLegacyTimeseriesDB().makeTimeSeriesDAO())
@@ -159,8 +163,7 @@ public class TimeSeriesResources extends OpenDcsResource
 		}
 		catch (NoSuchObjectException e)
 		{
-			return Response.status(HttpServletResponse.SC_NOT_FOUND)
-					.entity("Time series with key=" + tsKey + " not found").build();
+			throw new DatabaseItemNotFoundException("Time series with key=" + tsKey + " not found");
 		}
 		catch (DbIoException ex)
 		{
@@ -244,8 +247,7 @@ public class TimeSeriesResources extends OpenDcsResource
 	{
 		if (tsKey == null)
 		{
-			throw new WebAppException(HttpServletResponse.SC_BAD_REQUEST,
-					"Missing required tskey parameter.");
+			throw new MissingParameterException("Missing required tskey parameter.");
 		}
 
 		Date dStart = null;
@@ -346,14 +348,26 @@ public class TimeSeriesResources extends OpenDcsResource
 	public Response getIntervals()
 			throws DbException
 	{
-		try (DbInterface dbi = new DbInterface();
-			 ApiRefListDAO rlDAO = new ApiRefListDAO(dbi))
+		try (IntervalDAI dai = getLegacyTimeseriesDB().makeIntervalDAO())
 		{
-			// TODO: Implement this in OpenDCS
-			HashMap<Long,ApiInterval> imap = rlDAO.getIntervals();
-			return Response.status(HttpServletResponse.SC_NOT_IMPLEMENTED)
-					.entity(imap.values()).build();
+			List<ApiInterval> intervals = iMap(dai.getAllIntervals());
+			return Response.status(HttpServletResponse.SC_OK)
+					.entity(intervals).build();
 		}
+		catch (DbIoException ex)
+		{
+			throw new DbException("Unable to retrieve intervals", ex);
+		}
+	}
+
+	static List<ApiInterval> iMap(List<Interval> intervals)
+	{
+		ArrayList<ApiInterval> ret = new ArrayList<>();
+		for(Interval intv : intervals)
+		{
+			ret.add(map(intv));
+		}
+		return ret;
 	}
 
 	@POST
@@ -380,8 +394,15 @@ public class TimeSeriesResources extends OpenDcsResource
 	static Interval map(ApiInterval intv)
 	{
 		Interval ret = new Interval(intv.getName());
-		ret.setKey(DbKey.createDbKey(intv.getIntervalId()));
-		ret.setCalConstant(Integer.parseInt(intv.getCalConstant()));
+		if (intv.getIntervalId() != null)
+		{
+			ret.setKey(DbKey.createDbKey(intv.getIntervalId()));
+		}
+		else
+		{
+			ret.setKey(DbKey.NullKey);
+		}
+		ret.setCalConstant(str2const(intv.getCalConstant()));
 		ret.setCalMultiplier(intv.getCalMultilier());
 		return ret;
 	}
@@ -389,11 +410,39 @@ public class TimeSeriesResources extends OpenDcsResource
 	static ApiInterval map(Interval intv)
 	{
 		ApiInterval ret = new ApiInterval();
-		ret.setIntervalId(intv.getKey().getValue());
+		if (intv.getKey() != null)
+		{
+			ret.setIntervalId(intv.getKey().getValue());
+		}
+		else
+		{
+			ret.setIntervalId(DbKey.NullKey.getValue());
+		}
+
 		ret.setName(intv.getName());
-		ret.setCalConstant(String.valueOf(intv.getCalConstant()));
+		ret.setCalConstant(IntervalCodes.getCalConstName(intv.getCalConstant()));
 		ret.setCalMultilier(intv.getCalMultiplier());
 		return ret;
+	}
+
+	static int str2const(String s)
+	{
+		if (s.isEmpty())
+			return -1;
+		s = s.toUpperCase();
+		if (s.charAt(0) == 'H')
+			return Calendar.HOUR_OF_DAY;
+		else if (s.charAt(0) == 'D')
+			return Calendar.DAY_OF_MONTH;
+		else if (s.charAt(0) == 'W')
+			return Calendar.WEEK_OF_YEAR;
+		else if (s.charAt(0) == 'Y')
+			return Calendar.YEAR;
+		else if (s.startsWith("MI"))
+			return Calendar.MINUTE;
+		else if (s.startsWith("MO"))
+			return Calendar.MONTH;
+		else return -1;
 	}
 
 	@DELETE
@@ -401,15 +450,22 @@ public class TimeSeriesResources extends OpenDcsResource
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({AuthorizationCheck.ODCS_API_ADMIN, AuthorizationCheck.ODCS_API_USER})
-	public Response deleteInterval(@QueryParam("intvid") Long intvId) throws DbException
+	public Response deleteInterval(@QueryParam("intvid") Long intvId)
+			throws DbException, MissingParameterException
 	{
-		try (DbInterface dbi = new DbInterface();
-			 ApiRefListDAO rlDAO = new ApiRefListDAO(dbi))
+		if (intvId == null)
 		{
-			// TODO: Implement this in OpenDCS
-			rlDAO.deleteInterval(intvId);
-			return Response.status(HttpServletResponse.SC_NOT_IMPLEMENTED)
+			throw new MissingParameterException("Missing required intvid parameter.");
+		}
+		try (IntervalDAI dai = getLegacyTimeseriesDB().makeIntervalDAO())
+		{
+			dai.deleteInterval(DbKey.createDbKey(intvId));
+			return Response.status(HttpServletResponse.SC_NO_CONTENT)
 					.entity("interval with ID=" + intvId + " deleted").build();
+		}
+		catch (DbIoException ex)
+		{
+			throw new DbException("Unable to delete interval", ex);
 		}
 	}
 
@@ -456,7 +512,7 @@ public class TimeSeriesResources extends OpenDcsResource
 	@Path("tsgroup")
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
-	public Response getTsGroupRefs(@QueryParam("groupid") Long groupId) throws DbException
+	public Response getTsGroup(@QueryParam("groupid") Long groupId) throws DbException
 	{
 		try (TsGroupDAI dai = getLegacyTimeseriesDB().makeTsGroupDAO())
 		{
@@ -525,7 +581,7 @@ public class TimeSeriesResources extends OpenDcsResource
 		return ret;
 	}
 
-	static ArrayList<TsGroup> map(ArrayList<ApiTsGroupRef> groupRefs)
+	static ArrayList<TsGroup> map(List<ApiTsGroupRef> groupRefs)
 	{
 		ArrayList<TsGroup> ret = new ArrayList<>();
 		for(ApiTsGroupRef ref : groupRefs)
@@ -556,14 +612,13 @@ public class TimeSeriesResources extends OpenDcsResource
 	{
 		if (groupId == null)
 		{
-			throw new WebAppException(HttpServletResponse.SC_BAD_REQUEST,
-					"Missing required groupid parameter.");
+			throw new MissingParameterException("Missing required groupid parameter.");
 		}
 
 		try (TsGroupDAI dai = getLegacyTimeseriesDB().makeTsGroupDAO())
 		{
 			dai.deleteTsGroup(DbKey.createDbKey(groupId));
-			return Response.status(HttpServletResponse.SC_OK)
+			return Response.status(HttpServletResponse.SC_NO_CONTENT)
 					.entity("tsgroup with ID=" + groupId + " deleted").build();
 		}
 		catch (DbIoException ex)
