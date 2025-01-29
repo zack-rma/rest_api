@@ -65,7 +65,7 @@ import org.opendcs.odcsapi.util.ProcWaiterThread;
  * Resources for editing, monitoring, stopping, and starting processes.
  */
 @Path("/")
-public class AppResources extends OpenDcsResource
+public final class AppResources extends OpenDcsResource
 {
 	@Context private HttpServletRequest request;
 	@Context private HttpHeaders httpHeaders;
