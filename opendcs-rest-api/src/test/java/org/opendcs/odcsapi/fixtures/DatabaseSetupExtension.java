@@ -17,6 +17,10 @@ package org.opendcs.odcsapi.fixtures;
 
 import javax.servlet.http.HttpServletResponse;
 
+import decodes.db.DatabaseException;
+import decodes.db.ScheduleEntryStatus;
+import decodes.polling.DacqEvent;
+import decodes.sql.DbKey;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -36,6 +40,7 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSetupExtension.class);
 	private static DbType currentDbType;
 	private static TomcatServer currentTomcat;
+	private static Configuration currentConfig;
 	private final Configuration config;
 	private final DbType dbType;
 	private TomcatServer tomcatServer;
@@ -44,6 +49,7 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 	{
 		this.config = config;
 		this.dbType = dbType;
+		currentConfig = config;
 	}
 
 	public static DbType getCurrentDbType()
@@ -122,5 +128,25 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 		{
 			throw new PreconditionViolationException("Server didn't start in time...");
 		}
+	}
+
+	public static void storeScheduleEntryStatus(ScheduleEntryStatus status) throws DatabaseException
+	{
+		currentConfig.storeScheduleEntryStatus(status);
+	}
+
+	public static void deleteScheduleEntryStatus(DbKey scheduleEntryId) throws DatabaseException
+	{
+		currentConfig.deleteScheduleEntryStatus(scheduleEntryId);
+	}
+
+	public static void storeDacqEvent(DacqEvent event) throws DatabaseException
+	{
+		currentConfig.storeDacqEvent(event);
+	}
+
+	public static void deleteEventsForPlatform(DbKey platformId) throws DatabaseException
+	{
+		currentConfig.deleteDacqEventForPlatform(platformId);
 	}
 }

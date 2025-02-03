@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.filter.session.SessionFilter;
 import io.restassured.path.json.JsonPath;
+import org.junit.jupiter.api.TestInstance;
 import org.opendcs.odcsapi.fixtures.DatabaseSetupExtension;
 import org.opendcs.odcsapi.fixtures.DbType;
 import org.opendcs.odcsapi.res.ObjectMapperContextResolver;
@@ -36,7 +37,8 @@ import static io.restassured.RestAssured.given;
 import static java.util.stream.Collectors.joining;
 import static org.hamcrest.Matchers.is;
 
-class BaseIT
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class BaseIT
 {
 	protected static String authHeader = null;
 
