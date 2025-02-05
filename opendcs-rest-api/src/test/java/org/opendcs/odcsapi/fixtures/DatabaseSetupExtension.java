@@ -18,10 +18,13 @@ package org.opendcs.odcsapi.fixtures;
 import javax.servlet.http.HttpServletResponse;
 
 import decodes.db.DatabaseException;
+import decodes.db.ScheduleEntry;
 import decodes.db.ScheduleEntryStatus;
 import decodes.polling.DacqEvent;
 import decodes.sql.DbKey;
 import io.restassured.RestAssured;
+import opendcs.dai.DacqEventDAI;
+import opendcs.dai.ScheduleEntryDAI;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.PreconditionViolationException;
@@ -40,8 +43,8 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSetupExtension.class);
 	private static DbType currentDbType;
 	private static TomcatServer currentTomcat;
-	private static Configuration currentConfig;
 	private final Configuration config;
+	private static Configuration currentConfig;
 	private final DbType dbType;
 	private TomcatServer tomcatServer;
 
@@ -132,21 +135,49 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 
 	public static void storeScheduleEntryStatus(ScheduleEntryStatus status) throws DatabaseException
 	{
-		currentConfig.storeScheduleEntryStatus(status);
+		try (ScheduleEntryDAI dai = currentConfig.getTsdb().makeScheduleEntryDAO())
+		{
+			dai.writeScheduleStatus(status);
+		}
+		catch(Throwable e)
+		{
+			throw new DatabaseException("Unable to store schedule entry status ", e);
+		}
 	}
 
 	public static void deleteScheduleEntryStatus(DbKey scheduleEntryId) throws DatabaseException
 	{
-		currentConfig.deleteScheduleEntryStatus(scheduleEntryId);
+		try (ScheduleEntryDAI dai = currentConfig.getTsdb().makeScheduleEntryDAO())
+		{
+			dai.deleteScheduleStatusFor(new ScheduleEntry(scheduleEntryId));
+		}
+		catch(Throwable e)
+		{
+			throw new DatabaseException("Unable to delete schedule entry status for specified schedule entry", e);
+		}
 	}
 
 	public static void storeDacqEvent(DacqEvent event) throws DatabaseException
 	{
-		currentConfig.storeDacqEvent(event);
+		try (DacqEventDAI dai = currentConfig.getTsdb().makeDacqEventDAO())
+		{
+			dai.writeEvent(event);
+		}
+		catch(Throwable e)
+		{
+			throw new DatabaseException("Unable to store event", e);
+		}
 	}
 
 	public static void deleteEventsForPlatform(DbKey platformId) throws DatabaseException
 	{
-		currentConfig.deleteDacqEventForPlatform(platformId);
+		try (DacqEventDAI dai = currentConfig.getTsdb().makeDacqEventDAO())
+		{
+			dai.deleteEventsForPlatform(platformId);
+		}
+		catch(Throwable e)
+		{
+			throw new DatabaseException("Unable to delete events for specified platform", e);
+		}
 	}
 }
