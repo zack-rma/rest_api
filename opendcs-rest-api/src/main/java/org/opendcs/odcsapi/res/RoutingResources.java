@@ -1,7 +1,7 @@
 /*
- *  Copyright 2023 OpenDCS Consortium
+ *  Copyright 2025 OpenDCS Consortium and its Contributors
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  Licensed under the Apache License, Version 2.0 (the "License")
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *       http://www.apache.org/licenses/LICENSE-2.0
@@ -15,13 +15,13 @@
 
 package org.opendcs.odcsapi.res;
 
+
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.Vector;
 import java.util.stream.Collectors;
-
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -64,10 +64,10 @@ import org.opendcs.odcsapi.dao.DbException;
 import org.opendcs.odcsapi.errorhandling.DatabaseItemNotFoundException;
 import org.opendcs.odcsapi.errorhandling.MissingParameterException;
 import org.opendcs.odcsapi.errorhandling.WebAppException;
-import org.opendcs.odcsapi.sec.AuthorizationCheck;
+import org.opendcs.odcsapi.util.ApiConstants;
 
 @Path("/")
-public class RoutingResources extends OpenDcsResource
+public final class RoutingResources extends OpenDcsResource
 {
 	@Context private HttpServletRequest request;
 	@Context private HttpHeaders httpHeaders;
@@ -75,7 +75,7 @@ public class RoutingResources extends OpenDcsResource
 	@GET
 	@Path("routingrefs")
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
+	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
 	public Response getRoutingRefs() throws DbException
 	{
 		DatabaseIO dbIo = null;
@@ -128,7 +128,7 @@ public class RoutingResources extends OpenDcsResource
 	@GET
 	@Path("routing")
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
+	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
 	public Response getRouting(@QueryParam("routingid") Long routingId)
 			throws WebAppException, DbException
 	{
@@ -203,7 +203,7 @@ public class RoutingResources extends OpenDcsResource
 	@Path("routing")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_ADMIN, AuthorizationCheck.ODCS_API_USER})
+	@RolesAllowed({ApiConstants.ODCS_API_ADMIN, ApiConstants.ODCS_API_USER})
 	public Response postRouting(ApiRouting routing)
 			throws DbException
 	{
@@ -328,7 +328,7 @@ public class RoutingResources extends OpenDcsResource
 	@GET
 	@Path("schedulerefs")
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
+	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
 	public Response getScheduleRefs()
 			throws DbException
 	{
@@ -370,9 +370,9 @@ public class RoutingResources extends OpenDcsResource
 	@GET
 	@Path("schedule")
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
-	public Response getSchedule(@QueryParam("scheduleid") Long scheduleId)
-			throws WebAppException, DbException
+	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
+ 	public Response getSchedule(@QueryParam("scheduleid") Long scheduleId)
+		throws WebAppException, DbException
 	{
 		if (scheduleId == null)
 		{
@@ -400,7 +400,7 @@ public class RoutingResources extends OpenDcsResource
 	@Path("schedule")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_ADMIN, AuthorizationCheck.ODCS_API_USER})
+	@RolesAllowed({ApiConstants.ODCS_API_ADMIN, ApiConstants.ODCS_API_USER})
 	public Response postSchedule(ApiScheduleEntry schedule)
 			throws DbException
 	{
@@ -487,7 +487,7 @@ public class RoutingResources extends OpenDcsResource
 	@Path("schedule")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_ADMIN, AuthorizationCheck.ODCS_API_USER})
+	@RolesAllowed({ApiConstants.ODCS_API_ADMIN, ApiConstants.ODCS_API_USER})
 	public Response deleteSchedule(@QueryParam("scheduleid") Long scheduleId)
 			throws DbException, WebAppException
 	{
@@ -512,7 +512,7 @@ public class RoutingResources extends OpenDcsResource
 	@GET
 	@Path("routingstatus")
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
+	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
 	public Response getRoutingStats()
 			throws DbException
 	{
@@ -580,7 +580,7 @@ public class RoutingResources extends OpenDcsResource
 	@GET
 	@Path("routingexecstatus")
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_GUEST})
+	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
 	public Response getRoutingExecStatus(@QueryParam("scheduleentryid") Long scheduleEntryId)
 			throws WebAppException, DbException
 	{
@@ -641,7 +641,7 @@ public class RoutingResources extends OpenDcsResource
 	@GET
 	@Path("dacqevents")
 	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({AuthorizationCheck.ODCS_API_ADMIN, AuthorizationCheck.ODCS_API_USER})
+	@RolesAllowed({ApiConstants.ODCS_API_ADMIN, ApiConstants.ODCS_API_USER})
 	public Response getDacqEvents(@QueryParam("appid") Long appId, @QueryParam("routingexecid") Long routingExecId,
 			@QueryParam("platformid") Long platformId, @QueryParam("backlog") String backlog)
 			throws DbException, MissingParameterException

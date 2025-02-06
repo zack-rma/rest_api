@@ -1,10 +1,24 @@
+/*
+ *  Copyright 2025 OpenDCS Consortium and its Contributors
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License")
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package org.opendcs.odcsapi.res.it;
 
 
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 
@@ -217,11 +231,34 @@ final class OdcsapiResourceIT extends BaseIT
 		ApiPlatform platform = getDtoFromResource("odcsapi_platform_dto.json", ApiPlatform.class);
 
 		siteId = storeSite();
+
+		String configJson = getJsonFromResource("config_input_data.json");
+
+		ExtractableResponse<Response> response = given()
+			.log().ifValidationFails(LogDetail.ALL, true)
+			.accept(MediaType.APPLICATION_JSON)
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("Authorization", authHeader)
+			.filter(sessionFilter)
+			.body(configJson)
+		.when()
+			.redirects().follow(true)
+			.redirects().max(3)
+			.post("config")
+		.then()
+			.log().ifValidationFails(LogDetail.ALL, true)
+		.assertThat()
+			.statusCode(is(HttpServletResponse.SC_CREATED))
+			.extract()
+		;
+
+		long configId = response.body().jsonPath().getLong("configId");
+		platform.setConfigId(configId);
 		platform.setSiteId(siteId);
 
 		String platformJson = MAPPER.writeValueAsString(platform);
 
-		ExtractableResponse<Response> response = given()
+		response = given()
 			.log().ifValidationFails(LogDetail.ALL, true)
 			.accept(MediaType.APPLICATION_JSON)
 			.contentType(MediaType.APPLICATION_JSON)
@@ -235,11 +272,29 @@ final class OdcsapiResourceIT extends BaseIT
 		.then()
 			.log().ifValidationFails(LogDetail.ALL, true)
 		.assertThat()
-			.statusCode(is(HttpServletResponse.SC_OK))
+			.statusCode(is(HttpServletResponse.SC_CREATED))
 			.extract()
 		;
 
-		return response.body().jsonPath().getLong("platformId");
+		Long platformId = response.body().jsonPath().getLong("platformId");
+
+		given()
+			.log().ifValidationFails(LogDetail.ALL, true)
+			.accept(MediaType.APPLICATION_JSON)
+			.header("Authorization", authHeader)
+			.filter(sessionFilter)
+			.queryParam("platformid", platformId)
+		.when()
+			.redirects().follow(true)
+			.redirects().max(3)
+			.get("platform")
+		.then()
+			.log().ifValidationFails(LogDetail.ALL, true)
+		.assertThat()
+			.statusCode(is(HttpServletResponse.SC_OK))
+		;
+
+		return platformId;
 	}
 
 	private void deletePlatform(Long platformId)
@@ -257,7 +312,7 @@ final class OdcsapiResourceIT extends BaseIT
 		.then()
 			.log().ifValidationFails(LogDetail.ALL, true)
 		.assertThat()
-			.statusCode(is(HttpServletResponse.SC_OK))
+			.statusCode(is(HttpServletResponse.SC_NO_CONTENT))
 		;
 	}
 

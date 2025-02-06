@@ -1,5 +1,21 @@
+/*
+ *  Copyright 2025 OpenDCS Consortium and its Contributors
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License")
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package org.opendcs.odcsapi.res.it;
 
+import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
@@ -20,10 +36,10 @@ import org.opendcs.odcsapi.fixtures.DatabaseContextProvider;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("integration-opentsdb-only")
 @ExtendWith(DatabaseContextProvider.class)
@@ -91,7 +107,7 @@ final class SiteResourcesIT extends BaseIT
 	{
 		JsonPath expected = getJsonPathFromResource("site_get_refs_expected.json");
 
-		given()
+		ExtractableResponse<Response> response = given()
 			.log().ifValidationFails(LogDetail.ALL, true)
 			.accept(MediaType.APPLICATION_JSON)
 			.contentType(MediaType.APPLICATION_JSON)
@@ -105,11 +121,22 @@ final class SiteResourcesIT extends BaseIT
 			.log().ifValidationFails(LogDetail.ALL, true)
 		.assertThat()
 			.statusCode(is(HttpServletResponse.SC_OK))
-			.body("size()", greaterThan(0))
-			.body("sitenames", equalTo(expected.get("sitenames")))
-			.body("public-name", equalTo(expected.get("public-name")))
-			.body("description", equalTo(expected.get("description")))
-		;
+		.extract();
+
+		JsonPath actual = response.body().jsonPath();
+		List<Map<String, Object>> actualSites = actual.getList("");
+
+		boolean found = false;
+		for (Map<String, Object> site : actualSites)
+		{
+			if (site.get("publicName").equals(expected.get("publicName")))
+			{
+				assertEquals(expected.get("sitenames"), site.get("sitenames"));
+				assertEquals(expected.get("description"), site.get("description"));
+				found = true;
+			}
+		}
+		assertTrue(found);
 	}
 
 	@TestTemplate

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2024 OpenDCS Consortium and its Contributors
+ *  Copyright 2025 OpenDCS Consortium and its Contributors
  *
  *  Licensed under the Apache License, Version 2.0 (the "License")
  *  you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
 
 package org.opendcs.odcsapi.fixtures;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import javax.servlet.http.HttpServletResponse;
 
-import decodes.db.DatabaseException;
-import decodes.db.ScheduleEntry;
-import decodes.db.ScheduleEntryStatus;
-import decodes.polling.DacqEvent;
-import decodes.sql.DbKey;
 import io.restassured.RestAssured;
 import opendcs.dai.DacqEventDAI;
 import opendcs.dai.ScheduleEntryDAI;
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.PreconditionViolationException;
 import org.opendcs.fixtures.configuration.Configuration;
+import org.opendcs.odcsapi.hydrojson.DbInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -42,6 +42,7 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSetupExtension.class);
 	private static DbType currentDbType;
+	private static Configuration currentConfig;
 	private static TomcatServer currentTomcat;
 	private final Configuration config;
 	private static Configuration currentConfig;
@@ -85,16 +86,37 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 		SystemExit exit = new SystemExit();
 		EnvironmentVariables environment = new EnvironmentVariables();
 		SystemProperties properties = new SystemProperties();
-		config.start(exit, environment, properties);
+		try
+		{
+			config.start(exit, environment, properties);
+		}
+		catch(Exception ex)
+		{
+			if(System.getProperty("testcontainer.cwms.bypass.url") == null)
+			{
+				throw ex;
+			}
+		}
 		environment.getVariables().forEach(System::setProperty);
 		if(dbType == DbType.CWMS)
 		{
+			DbInterface.isCwms = true;
 			System.setProperty("DB_DRIVER_CLASS", "oracle.jdbc.driver.OracleDriver");
+			System.setProperty("DB_DATASOURCE_CLASS", "org.apache.tomcat.jdbc.pool.DataSourceFactory");
+			String dbOffice = System.getProperty("DB_OFFICE");
+			String initScript = String.format("BEGIN cwms_ccp_vpd.set_ccp_session_ctx(cwms_util.get_office_code('%s'), 2, '%s' ); END;", dbOffice, dbOffice);
+			System.setProperty("DB_CONNECTION_INIT", initScript);
+			DbInterface.decodesProperties.setProperty("CwmsOfficeId", dbOffice);
+			DbInterface.setDatabaseType("cwms");
 		}
 		else
 		{
+			DbInterface.isCwms = false;
 			System.setProperty("DB_DRIVER_CLASS", "org.postgresql.Driver");
+			System.setProperty("DB_DATASOURCE_CLASS", "org.apache.tomcat.jdbc.pool.DataSourceFactory");
+			System.setProperty("DB_CONNECTION_INIT", "SELECT 1");
 		}
+		setupClientUser();
 		TomcatServer tomcat = new TomcatServer("build/tomcat", 0, warContext);
 		tomcat.start();
 		RestAssured.baseURI = "http://localhost";
@@ -132,52 +154,44 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 			throw new PreconditionViolationException("Server didn't start in time...");
 		}
 	}
-
-	public static void storeScheduleEntryStatus(ScheduleEntryStatus status) throws DatabaseException
+  
+	public static void loadXMLDataIntoDb(String[] files) throws Exception
 	{
-		try (ScheduleEntryDAI dai = currentConfig.getTsdb().makeScheduleEntryDAO())
+		String[] filePaths = new String[files.length];
+		for (int i = 0; i < files.length; i++)
 		{
-			dai.writeScheduleStatus(status);
+			filePaths[i] = String.format("%s%s%s",
+					System.getProperty("user.dir"),
+					"/src/test/resources/org/opendcs/odcsapi/res/it/",
+					files[i]);
 		}
-		catch(Throwable e)
-		{
-			throw new DatabaseException("Unable to store schedule entry status ", e);
-		}
+		currentConfig.loadXMLData(filePaths, new SystemExit(), new SystemProperties());
 	}
 
-	public static void deleteScheduleEntryStatus(DbKey scheduleEntryId) throws DatabaseException
+	private void setupClientUser()
 	{
-		try (ScheduleEntryDAI dai = currentConfig.getTsdb().makeScheduleEntryDAO())
+		if(dbType == DbType.CWMS)
 		{
-			dai.deleteScheduleStatusFor(new ScheduleEntry(scheduleEntryId));
-		}
-		catch(Throwable e)
-		{
-			throw new DatabaseException("Unable to delete schedule entry status for specified schedule entry", e);
-		}
-	}
-
-	public static void storeDacqEvent(DacqEvent event) throws DatabaseException
-	{
-		try (DacqEventDAI dai = currentConfig.getTsdb().makeDacqEventDAO())
-		{
-			dai.writeEvent(event);
-		}
-		catch(Throwable e)
-		{
-			throw new DatabaseException("Unable to store event", e);
-		}
-	}
-
-	public static void deleteEventsForPlatform(DbKey platformId) throws DatabaseException
-	{
-		try (DacqEventDAI dai = currentConfig.getTsdb().makeDacqEventDAO())
-		{
-			dai.deleteEventsForPlatform(platformId);
-		}
-		catch(Throwable e)
-		{
-			throw new DatabaseException("Unable to delete events for specified platform", e);
+			String userPermissions = "begin execute immediate 'grant web_user to " + System.getProperty("DB_USERNAME") + "'; end;";
+			String dbOffice = System.getProperty("DB_OFFICE");
+			String setWebUserPermissions = "begin\n" +
+					"   cwms_sec.add_user_to_group(?, 'CWMS User Admins',?) ;\n" +
+					"   commit;\n" +
+					"end;";
+			try(Connection connection = DriverManager.getConnection(System.getProperty("DB_URL"), "CWMS_20",
+					System.getProperty("DB_PASSWORD"));
+				PreparedStatement stmt1 = connection.prepareStatement(userPermissions);
+				PreparedStatement stmt2 = connection.prepareStatement(setWebUserPermissions))
+			{
+				stmt1.executeQuery();
+				stmt2.setString(1, System.getProperty("DB_USERNAME"));
+				stmt2.setString(2, dbOffice);
+				stmt2.executeQuery();
+			}
+			catch(SQLException e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 }
