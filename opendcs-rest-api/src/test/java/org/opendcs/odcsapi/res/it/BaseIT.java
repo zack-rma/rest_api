@@ -26,14 +26,16 @@ import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import decodes.db.DatabaseException;
+import decodes.polling.DacqEvent;
+import decodes.db.PlatformStatus;
 import decodes.db.ScheduleEntry;
 import decodes.db.ScheduleEntryStatus;
-import decodes.polling.DacqEvent;
 import decodes.sql.DbKey;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.filter.session.SessionFilter;
 import io.restassured.path.json.JsonPath;
 import opendcs.dai.DacqEventDAI;
+import opendcs.dai.PlatformStatusDAI;
 import opendcs.dai.ScheduleEntryDAI;
 import org.apache.catalina.session.StandardSession;
 import org.opendcs.fixtures.configuration.Configuration;
@@ -196,7 +198,7 @@ public class BaseIT
 		}
 	}
 
-	public static void deleteScheduleEntryStatus(DbKey entryId) throws DatabaseException
+	public static void deleteScheduleEntryStatus(DbKey statusId) throws DatabaseException
 	{
 		Configuration currentConfig = DatabaseSetupExtension.getCurrentConfig();
 		try (ScheduleEntryDAI dai = currentConfig.getTsdb().makeScheduleEntryDAO())
@@ -233,6 +235,31 @@ public class BaseIT
 		catch (Throwable e)
 		{
 			throw new DatabaseException("Error deleting dacq event for specified platform", e);
+	}
+
+	public static void storePlatformStatus(PlatformStatus status) throws DatabaseException
+	{
+		Configuration currentConfig = DatabaseSetupExtension.getCurrentConfig();
+		try (PlatformStatusDAI dai = currentConfig.getTsdb().makePlatformStatusDAO())
+		{
+			dai.writePlatformStatus(status);
+		}
+		catch (Throwable ex)
+		{
+			throw new DatabaseException("Error storing platform status", ex);
+		}
+	}
+
+	public static void deletePlatformStatus(DbKey statusId) throws DatabaseException
+	{
+		Configuration currentConfig = DatabaseSetupExtension.getCurrentConfig();
+		try (PlatformStatusDAI dai = currentConfig.getTsdb().makePlatformStatusDAO())
+		{
+			dai.deletePlatformStatus(statusId);
+		}
+		catch (Throwable ex)
+		{
+			throw new DatabaseException("Error deleting platform status", ex);
 		}
 	}
 }

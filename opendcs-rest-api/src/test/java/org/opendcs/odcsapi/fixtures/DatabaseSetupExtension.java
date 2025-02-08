@@ -58,6 +58,11 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 		return currentDbType;
 	}
 
+	public static Configuration getCurrentConfig()
+	{
+		return currentConfig;
+	}
+
 	public static TomcatServer getCurrentTomcat()
 	{
 		return currentTomcat;
