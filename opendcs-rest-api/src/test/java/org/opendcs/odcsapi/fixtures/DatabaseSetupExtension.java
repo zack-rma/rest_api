@@ -22,8 +22,6 @@ import java.sql.SQLException;
 import javax.servlet.http.HttpServletResponse;
 
 import io.restassured.RestAssured;
-import opendcs.dai.DacqEventDAI;
-import opendcs.dai.ScheduleEntryDAI;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.PreconditionViolationException;
@@ -45,7 +43,6 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 	private static Configuration currentConfig;
 	private static TomcatServer currentTomcat;
 	private final Configuration config;
-	private static Configuration currentConfig;
 	private final DbType dbType;
 	private TomcatServer tomcatServer;
 
@@ -64,6 +61,11 @@ public class DatabaseSetupExtension implements BeforeEachCallback
 	public static TomcatServer getCurrentTomcat()
 	{
 		return currentTomcat;
+	}
+
+	public static Configuration getCurrentConfig()
+	{
+		return currentConfig;
 	}
 
 	@Override
