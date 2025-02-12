@@ -46,7 +46,6 @@ import decodes.db.PlatformSensor;
 import decodes.db.PlatformStatus;
 import decodes.db.RoutingSpec;
 import decodes.db.ScheduleEntry;
-import decodes.db.ScheduleEntryStatus;
 import decodes.db.Site;
 import decodes.db.TransportMedium;
 import decodes.db.ValueNotFoundException;
@@ -83,7 +82,7 @@ public final class PlatformResources extends OpenDcsResource
 		{
 
 			PlatformList platformList = new PlatformList();
-			platformList = dbIo.readPlatformList(platformList, tmtype);
+			dbIo.readPlatformList(platformList, tmtype);
 			List<ApiPlatformRef> platSpecs = map(platformList);
 			for(ApiPlatformRef ps : platSpecs)
 			{
@@ -162,7 +161,7 @@ public final class PlatformResources extends OpenDcsResource
 		{
 			Platform platform = new Platform();
 			platform.setId(DbKey.createDbKey(platformId));
-			platform = dbIo.readPlatform(platform);
+			dbIo.readPlatform(platform);
 			return Response.status(HttpServletResponse.SC_OK).entity(map(platform)).build();
 		}
 		catch(ValueNotFoundException ex)
@@ -472,8 +471,7 @@ public final class PlatformResources extends OpenDcsResource
 			{
 				try (ScheduleEntryDAI dai = dbIo.makeScheduleEntryDAO())
 				{
-					ScheduleEntryStatus scheduleEntryStatus = dai.readScheduleStatusById(status.getLastScheduleEntryStatusId());
-					ScheduleEntry scheduleEntry = dai.readScheduleEntry(scheduleEntryStatus.getScheduleEntryId());
+					ScheduleEntry scheduleEntry = dai.readScheduleEntryByStatusId(status.getLastScheduleEntryStatusId());
 					long routingId = scheduleEntry.getRoutingSpecId().getValue();
 					RoutingSpec rs = new RoutingSpec();
 					rs.setId(DbKey.createDbKey(routingId));
