@@ -188,7 +188,7 @@ public class BaseIT
 	public static void storeScheduleEntryStatus(ScheduleEntryStatus status) throws DatabaseException
 	{
 		Configuration currentConfig = DatabaseSetupExtension.getCurrentConfig();
-		try (ScheduleEntryDAI dai = currentConfig.getTsdb().makeScheduleEntryDAO())
+		try (ScheduleEntryDAI dai = currentConfig.getDecodesDatabase().getDbIo().makeScheduleEntryDAO())
 		{
 			dai.writeScheduleStatus(status);
 		}
@@ -201,9 +201,9 @@ public class BaseIT
 	public static void deleteScheduleEntryStatus(DbKey statusId) throws DatabaseException
 	{
 		Configuration currentConfig = DatabaseSetupExtension.getCurrentConfig();
-		try (ScheduleEntryDAI dai = currentConfig.getTsdb().makeScheduleEntryDAO())
+		try (ScheduleEntryDAI dai = currentConfig.getDecodesDatabase().getDbIo().makeScheduleEntryDAO())
 		{
-			ScheduleEntry entry = new ScheduleEntry(entryId);
+			ScheduleEntry entry = new ScheduleEntry(statusId);
 			dai.deleteScheduleStatusFor(entry);
 		}
 		catch (Throwable e)
@@ -235,6 +235,7 @@ public class BaseIT
 		catch (Throwable e)
 		{
 			throw new DatabaseException("Error deleting dacq event for specified platform", e);
+		}
 	}
 
 	public static void storePlatformStatus(PlatformStatus status) throws DatabaseException
