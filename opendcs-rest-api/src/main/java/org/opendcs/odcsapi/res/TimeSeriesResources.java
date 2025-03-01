@@ -468,6 +468,8 @@ public final class TimeSeriesResources extends OpenDcsResource
 	@Path("intervals")
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
+	@Tag(name = "Time Series Methods - Interval Methods", description = "Time Intervals are stored in the database "
+			+ "for OpenTSDB. They are hardcoded for CWMS and HDB.")
 	@Operation(
 			summary = "Returns a list of time intervals defined in the database.",
 			description = "Example: \n\n    http://localhost:8080/odcsapi/intervals\n\n" +
@@ -644,33 +646,35 @@ public final class TimeSeriesResources extends OpenDcsResource
 	@Path("tsgrouprefs")
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
+	@Tag(name = "Time Series Methods - Groups", description = "Time Series Groups are used to define a "
+			+ "set of time series identifiers")
 	@Operation(
-		summary = "Provide a list of all groups defined in the database.",
-		description = "Time Series Groups are used to define a set of time series identifiers. "
-				+ "Groups can contain:\n  \n*  Explicit list of time series identifiers  \n"
-				+ "*  A list of attributes to flexibly define a set of time series identifiers, "
-				+ "E.g. All time series at a particular with interval '30minutes'.  \n"
-				+ "*  A list of sub-groups that can be included, excluded, "
-				+ "or intersected with the group being defined.\n  \n"
-				+ "***\n  \nExample URL:  \n\n    http://localhost:8080/odcsapi-0-7/tsgrouprefs\n\n"
-				+ "A security token may be supplied in the header or in the URL, but it is not required. "
-				+ "The returned list has the following structure:\n  \n```\n  [\n    {\n      "
-				+ "\"groupId\": 8,\n      \"groupName\": \"topgroup\",\n      \"groupType\": \"basin\",\n      "
-				+ "\"description\": \"\"\n    },\n    {\n      \"groupId\": 7,\n      "
-				+ "\"groupName\": \"subgroup-x\",\n      \"groupType\": \"data type\",\n      "
-				+ "\"description\": \"testing for OPENDCS-15 issue\"\n    },\n    {\n      "
-				+ "\"groupId\": 2,\n      \"groupName\": \"regtest_017\",\n      "
-				+ "\"groupType\": \"data-type\",\n      \"description\": \"Group for regression test 017\"\n    },"
-				+ "\n    {\n      \"groupId\": 3,\n      \"groupName\": \"stageRate1Var\",\n      "
-				+ "\"groupType\": \"basin\",\n      \"description\": \"Collection of TS IDs with stage "
-				+ "to flow ratings\"\n    }\n  ]\n\n```\n\n  ",
-		responses = {
-				@ApiResponse(responseCode = "200", description = "Successfully retrieved time series group references",
-						content = @Content(mediaType = MediaType.APPLICATION_JSON,
-								array = @ArraySchema(schema = @Schema(implementation = ApiTsGroupRef.class)))),
-				@ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content)
-		},
-		tags = {"Time Series Methods - Groups"}
+			summary = "Provide a list of all groups defined in the database.",
+			description = "Time Series Groups are used to define a set of time series identifiers. "
+					+ "Groups can contain:\n  \n*  Explicit list of time series identifiers  \n"
+					+ "*  A list of attributes to flexibly define a set of time series identifiers, "
+					+ "E.g. All time series at a particular with interval '30minutes'.  \n"
+					+ "*  A list of sub-groups that can be included, excluded, "
+					+ "or intersected with the group being defined.\n  \n"
+					+ "***\n  \nExample URL:  \n\n    http://localhost:8080/odcsapi-0-7/tsgrouprefs\n\n"
+					+ "A security token may be supplied in the header or in the URL, but it is not required. "
+					+ "The returned list has the following structure:\n  \n```\n  [\n    {\n      "
+					+ "\"groupId\": 8,\n      \"groupName\": \"topgroup\",\n      \"groupType\": \"basin\",\n      "
+					+ "\"description\": \"\"\n    },\n    {\n      \"groupId\": 7,\n      "
+					+ "\"groupName\": \"subgroup-x\",\n      \"groupType\": \"data type\",\n      "
+					+ "\"description\": \"testing for OPENDCS-15 issue\"\n    },\n    {\n      "
+					+ "\"groupId\": 2,\n      \"groupName\": \"regtest_017\",\n      "
+					+ "\"groupType\": \"data-type\",\n      \"description\": \"Group for regression test 017\"\n    },"
+					+ "\n    {\n      \"groupId\": 3,\n      \"groupName\": \"stageRate1Var\",\n      "
+					+ "\"groupType\": \"basin\",\n      \"description\": \"Collection of TS IDs with stage "
+					+ "to flow ratings\"\n    }\n  ]\n\n```\n\n  ",
+			responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved time series group references",
+							content = @Content(mediaType = MediaType.APPLICATION_JSON,
+									array = @ArraySchema(schema = @Schema(implementation = ApiTsGroupRef.class)))),
+					@ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content)
+			},
+			tags = {"Time Series Methods - Groups"}
 	)
 	public Response getTsGroupRefs () throws DbException
 	{
@@ -707,99 +711,99 @@ public final class TimeSeriesResources extends OpenDcsResource
 		return ret;
 	}
 
-	@GET
-	@Path("tsgroup")
-	@Produces(MediaType.APPLICATION_JSON)
-	@RolesAllowed({ApiConstants.ODCS_API_GUEST})
-	@Operation(
-			summary = "Provide a complete definition of a single group.",
-			description = "Example URL:  \n\n    http://localhost:8080/odcsapi-0-7/tsgroup?groupid=9\n\n"
-					+
-					"A security token may be supplied in the header or in the URL, but it is not required.  \n  \n  \n"
-					+
-					"The returned list has the following structure:  \n  \n```\n  {\n    \"groupId\": 9,\n    "
-					+
-					"\"groupName\": \"junk\",\n    \"groupType\": \"basin\",\n    \"description\": \"\",\n    "
-					+
-					"\"tsIds\": [\n      {\n        \"uniqueString\": \"OKVI4.Stage.Inst.15Minutes.0.raw\",\n        "
-					+
-					"\"key\": 1,\n        \"description\": null,\n        \"storageUnits\": \"ft\",\n        "
-					+
-					"\"active\": true\n      },\n      {\n        \"uniqueString\": \"OKVI4.Stage.Ave.1Day.1Day.CO\","
-					+
-					"\n        \"key\": 2,\n        \"description\": null,\n        \"storageUnits\": \"ft\",\n        "
-					+
-					"\"active\": true\n      }\n    ],\n    \"includeGroups\": [\n      {\n        \"groupId\": 1,"
-					+
-					"\n        \"groupName\": \"MROI4-ROWI4-HG\",\n        \"groupType\": \"basin\",\n        "
-					+
-					"\"description\": \"This is a group for the MROI4-ROWI4-HG Regression Test\"\n      }\n    ],"
-					+
-					"\n    \"excludeGroups\": [\n      {\n        \"groupId\": 2,\n        "
-					+
-					"\"groupName\": \"regtest_017\",\n        \"groupType\": \"data-type\",\n        "
-					+
-					"\"description\": \"Group for regression test 017\"\n      }\n    ],\n    "
-					+
-					"\"intersectGroups\": [\n      {\n        \"groupId\": 7,\n        "
-					+
-					"\"groupName\": \"subgroup-x\",\n        \"groupType\": \"data type\",\n        "
-					+
-					"\"description\": \"testing for OPENDCS-15 issue\"\n      }\n    ],\n    " +
-					"\"groupAttrs\": [\n      \"BaseLocation=TESTSITE2\",\n      \"BaseParam=ELEV\",\n      " +
-					"\"BaseVersion=DCP\",\n      \"Duration=0\",\n      \"Interval=1Hour\",\n      " +
-					"\"ParamType=Inst\",\n      \"SubLocation=Spillway2-Gate1\",\n      \"SubParam=PZ1B\",\n      " +
-					"\"SubVersion=Raw\",\n      \"Version=DCP-Raw\"\n    ],\n    \"groupSites\": [\n      " +
-					"{\n        \"siteId\": 2,\n        \"sitenames\": {\n          " +
-					"\"CWMS\": \"ROWI4\",\n          \"USGS\": \"05449500\"\n        },\n        " +
-					"\"publicName\": \"IOWA RIVER NEAR ROWAN\",\n        " +
-					"\"description\": \"IOWA RIVER NEAR ROWAN 4NW\"\n      }\n    ],\n    " +
-					"\"groupDataTypes\": [\n      {\n        \"id\": 224,\n        " +
-					"\"standard\": \"CWMS\",\n        \"code\": \"ELEV-PZ2A\",\n        " +
-					"\"displayName\": \"CWMS:ELEV-PZ2A\"\n      }\n    ]\n  }\n\n```\n  \n" +
-					"**Notes**:  \n*  **tsIds** is a list of explicit time series identifiers " +
-					"that are considered part of the group.  \n*  **includedGroups** is a list of " +
-					"subgroups to be included in this group.  \n*  **excludedGroups** is a list of subgroups. " +
-					"The TSIDs in the subgroup will be excluded from this group.  \n" +
-					"*  **intersectedGroups** is a list of subgroups to be intersected with this group. " +
-					"Only TSIDs in both groups are considered part of this group.  \n" +
-					"*  **groupSites** is a list of Site records. TSIDs in these Sites are " +
-					"considered members of this group.  \n*  **groupDataTypes** is a list of fully-specified " +
-					"data types (a.k.a. 'Param' in CWMS and OpenTSDB databases). TSIDs with a matching data " +
-					"type will be included in the group.  \n*  **groupAttrs** is a list of attributes " +
-					"that are used to define the group. These are presented in 'name=value' pairs where " +
-					"the name is one of the following:  \n\n    *  **BaseLocation** – only the first " +
-					"part of Site (Location) before first hyphen  \n    *  **SubLocation** – only trailing " +
-					"part of Site after first hyphen.  \n    *  **BaseParam** – only first part of data " +
-					"type (Param) before first hyphen  \n    *  **SubParam** – only trailing part of data " +
-					"type (Param) after first hyphen\n    *  **ParamType**  \n    *  **Interval**\n    " +
-					"*  **Duration**  \n    *  **Version**  \n    *  **BaseVersion**\n    *  **SubVersion**",
-			responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved time series group details"),
-					@ApiResponse(responseCode = "400", description = "Invalid or missing group ID", content = @Content),
-					@ApiResponse(responseCode = "500", description = "Database error occurred", content = @Content)
-			},
-			tags = {"Time Series Methods - Groups"}
-	)
-	public Response getTsGroupRefs (@Parameter(description = "Requested group id", required = true,
-			schema = @Schema(implementation = Long.class), example = "9")
-		@QueryParam("groupid") Long groupId)
-			throws DbException, WebAppException
-	{
-		try (TsGroupDAI dai = getLegacyTimeseriesDB().makeTsGroupDAO())
+		@GET
+		@Path("tsgroup")
+		@Produces(MediaType.APPLICATION_JSON)
+		@RolesAllowed({ApiConstants.ODCS_API_GUEST})
+		@Operation(
+				summary = "Provide a complete definition of a single group.",
+				description = "Example URL:  \n\n    http://localhost:8080/odcsapi-0-7/tsgroup?groupid=9\n\n"
+						+
+						"A security token may be supplied in the header or in the URL, but it is not required.  \n  \n  \n"
+						+
+						"The returned list has the following structure:  \n  \n```\n  {\n    \"groupId\": 9,\n    "
+						+
+						"\"groupName\": \"junk\",\n    \"groupType\": \"basin\",\n    \"description\": \"\",\n    "
+						+
+						"\"tsIds\": [\n      {\n        \"uniqueString\": \"OKVI4.Stage.Inst.15Minutes.0.raw\",\n        "
+						+
+						"\"key\": 1,\n        \"description\": null,\n        \"storageUnits\": \"ft\",\n        "
+						+
+						"\"active\": true\n      },\n      {\n        \"uniqueString\": \"OKVI4.Stage.Ave.1Day.1Day.CO\","
+						+
+						"\n        \"key\": 2,\n        \"description\": null,\n        \"storageUnits\": \"ft\",\n        "
+						+
+						"\"active\": true\n      }\n    ],\n    \"includeGroups\": [\n      {\n        \"groupId\": 1,"
+						+
+						"\n        \"groupName\": \"MROI4-ROWI4-HG\",\n        \"groupType\": \"basin\",\n        "
+						+
+						"\"description\": \"This is a group for the MROI4-ROWI4-HG Regression Test\"\n      }\n    ],"
+						+
+						"\n    \"excludeGroups\": [\n      {\n        \"groupId\": 2,\n        "
+						+
+						"\"groupName\": \"regtest_017\",\n        \"groupType\": \"data-type\",\n        "
+						+
+						"\"description\": \"Group for regression test 017\"\n      }\n    ],\n    "
+						+
+						"\"intersectGroups\": [\n      {\n        \"groupId\": 7,\n        "
+						+
+						"\"groupName\": \"subgroup-x\",\n        \"groupType\": \"data type\",\n        "
+						+
+						"\"description\": \"testing for OPENDCS-15 issue\"\n      }\n    ],\n    " +
+						"\"groupAttrs\": [\n      \"BaseLocation=TESTSITE2\",\n      \"BaseParam=ELEV\",\n      " +
+						"\"BaseVersion=DCP\",\n      \"Duration=0\",\n      \"Interval=1Hour\",\n      " +
+						"\"ParamType=Inst\",\n      \"SubLocation=Spillway2-Gate1\",\n      \"SubParam=PZ1B\",\n      " +
+						"\"SubVersion=Raw\",\n      \"Version=DCP-Raw\"\n    ],\n    \"groupSites\": [\n      " +
+						"{\n        \"siteId\": 2,\n        \"sitenames\": {\n          " +
+						"\"CWMS\": \"ROWI4\",\n          \"USGS\": \"05449500\"\n        },\n        " +
+						"\"publicName\": \"IOWA RIVER NEAR ROWAN\",\n        " +
+						"\"description\": \"IOWA RIVER NEAR ROWAN 4NW\"\n      }\n    ],\n    " +
+						"\"groupDataTypes\": [\n      {\n        \"id\": 224,\n        " +
+						"\"standard\": \"CWMS\",\n        \"code\": \"ELEV-PZ2A\",\n        " +
+						"\"displayName\": \"CWMS:ELEV-PZ2A\"\n      }\n    ]\n  }\n\n```\n  \n" +
+						"**Notes**:  \n*  **tsIds** is a list of explicit time series identifiers " +
+						"that are considered part of the group.  \n*  **includedGroups** is a list of " +
+						"subgroups to be included in this group.  \n*  **excludedGroups** is a list of subgroups. " +
+						"The TSIDs in the subgroup will be excluded from this group.  \n" +
+						"*  **intersectedGroups** is a list of subgroups to be intersected with this group. " +
+						"Only TSIDs in both groups are considered part of this group.  \n" +
+						"*  **groupSites** is a list of Site records. TSIDs in these Sites are " +
+						"considered members of this group.  \n*  **groupDataTypes** is a list of fully-specified " +
+						"data types (a.k.a. 'Param' in CWMS and OpenTSDB databases). TSIDs with a matching data " +
+						"type will be included in the group.  \n*  **groupAttrs** is a list of attributes " +
+						"that are used to define the group. These are presented in 'name=value' pairs where " +
+						"the name is one of the following:  \n\n    *  **BaseLocation** – only the first " +
+						"part of Site (Location) before first hyphen  \n    *  **SubLocation** – only trailing " +
+						"part of Site after first hyphen.  \n    *  **BaseParam** – only first part of data " +
+						"type (Param) before first hyphen  \n    *  **SubParam** – only trailing part of data " +
+						"type (Param) after first hyphen\n    *  **ParamType**  \n    *  **Interval**\n    " +
+						"*  **Duration**  \n    *  **Version**  \n    *  **BaseVersion**\n    *  **SubVersion**",
+				responses = {
+						@ApiResponse(responseCode = "200", description = "Successfully retrieved time series group details"),
+						@ApiResponse(responseCode = "400", description = "Invalid or missing group ID", content = @Content),
+						@ApiResponse(responseCode = "500", description = "Database error occurred", content = @Content)
+				},
+				tags = {"Time Series Methods - Groups"}
+		)
+		public Response getTsGroupRefs (@Parameter(description = "Requested group id", required = true,
+				schema = @Schema(implementation = Long.class), example = "9")
+			@QueryParam("groupid") Long groupId)
+				throws WebAppException, DbException
 		{
-			TsGroup group = dai.getTsGroupById(DbKey.createDbKey(groupId));
-			if (group == null)
+			try (TsGroupDAI dai = getLegacyTimeseriesDB().makeTsGroupDAO())
 			{
-				throw new DatabaseItemNotFoundException("Time series group with ID=" + groupId + " not found");
+				TsGroup group = dai.getTsGroupById(DbKey.createDbKey(groupId));
+				if (group == null)
+				{
+					throw new DatabaseItemNotFoundException("Time series group with ID=" + groupId + " not found");
+				}
+				return Response.status(HttpServletResponse.SC_OK)
+						.entity(map(group)).build();
 			}
-			return Response.status(HttpServletResponse.SC_OK)
-					.entity(map(group)).build();
-		}
-		catch (DbIoException ex)
-		{
-			throw new DbException("Unable to retrieve time series group by ID", ex);
-		}
+			catch (DbIoException ex)
+			{
+				throw new DbException("Unable to retrieve time series group by ID", ex);
+			}
 	}
 
 	static ApiTsGroup map(TsGroup group)
@@ -881,7 +885,7 @@ public final class TimeSeriesResources extends OpenDcsResource
 			return Response.status(HttpServletResponse.SC_OK)
 					.entity(map(group)).build();
 		}
-			catch (DbIoException | BadTimeSeriesException ex)
+		catch (DbIoException | BadTimeSeriesException ex)
 		{
 			throw new DbException("Unable to store time series group", ex);
 		}
@@ -1001,20 +1005,20 @@ public final class TimeSeriesResources extends OpenDcsResource
 		@QueryParam("groupid") Long groupId)
 			throws WebAppException, DbException
 	{
-		if (groupId == null)
-		{
-			throw new MissingParameterException("Missing required groupid parameter.");
-		}
+			if (groupId == null)
+			{
+				throw new MissingParameterException("Missing required groupid parameter.");
+			}
 
-		try (TsGroupDAI dai = getLegacyTimeseriesDB().makeTsGroupDAO())
-		{
-			dai.deleteTsGroup(DbKey.createDbKey(groupId));
-			return Response.status(HttpServletResponse.SC_NO_CONTENT)
-					.entity("tsgroup with ID=" + groupId + " deleted").build();
-		}
-		catch (DbIoException ex)
-		{
-			throw new DbException("Unable to delete time series group", ex);
-		}
+			try (TsGroupDAI dai = getLegacyTimeseriesDB().makeTsGroupDAO())
+			{
+				dai.deleteTsGroup(DbKey.createDbKey(groupId));
+				return Response.status(HttpServletResponse.SC_NO_CONTENT)
+						.entity("tsgroup with ID=" + groupId + " deleted").build();
+			}
+			catch (DbIoException ex)
+			{
+				throw new DbException("Unable to delete time series group", ex);
+			}
 	}
 }
