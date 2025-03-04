@@ -35,6 +35,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -137,7 +138,12 @@ public final class AppResources
 					description = "Loading App",
 					required = true,
 					content = @Content(mediaType = MediaType.APPLICATION_JSON,
-							schema = @Schema(implementation = ApiLoadingApp.class))
+							schema = @Schema(implementation = ApiLoadingApp.class),
+					examples = {
+							@ExampleObject(name = "Basic", value = ResourceExamples.AppExamples.BASIC),
+							@ExampleObject(name = "New", value = ResourceExamples.AppExamples.NEW),
+							@ExampleObject(name = "Update", value = ResourceExamples.AppExamples.UPDATE)
+					})
 			),
 			responses = {
 					@ApiResponse(responseCode = "201", description = "Successfully stored application",
